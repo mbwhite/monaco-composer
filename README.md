@@ -10,3 +10,7 @@ See https://github.com/fabric-composer/fabric-composer/issues/207
 - [ ] Intergated the JSON language per MS sample code (https://github.com/Microsoft/vscode-json-languageservice)
 - [ ] Get the FabricComposer modelling language VSCode server (from MGK and in vscode repo)
 - [ ] Can that be integrated
+
+
+ - Language Server Protocol https://github.com/Microsoft/language-server-protocol
+ 
