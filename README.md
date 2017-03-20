@@ -33,3 +33,6 @@ http://52.29.251.2/calcmonaco/
 
 Adding a new language
 https://github.com/Microsoft/monaco-languages
+
+Notes on how the editor is structured
+https://github.com/Microsoft/monaco-editor/issues/190
