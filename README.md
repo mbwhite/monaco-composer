@@ -13,4 +13,23 @@ See https://github.com/fabric-composer/fabric-composer/issues/207
 
 
  - Language Server Protocol https://github.com/Microsoft/language-server-protocol
+
+MS don't use the language server protocol for the Monoco examples - instead pull the actual core 'smarts' out of the module and 
+put them into the Monaco plugin
+
+----
+
+API reference.
+https://microsoft.github.io/monaco-editor/api/modules/monaco.languages.html
+
+https://github.com/Microsoft/monaco-json
  
+----
+The go sample is not sufficiently mature or well documented to know how this is supposed to work
+Sounds like exactly what we would like to do. 
+
+https://typefox.io/how-to-embed-a-monaco-editor-in-a-browser-as-a-part-of-my-first-task-at-typefox
+http://52.29.251.2/calcmonaco/
+
+Adding a new language
+https://github.com/Microsoft/monaco-languages
