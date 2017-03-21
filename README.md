@@ -1,7 +1,5 @@
 # monaco-composer
-Test bed for integrating the monaco, and language server for fabric composer
-
-See https://github.com/fabric-composer/fabric-composer/issues/207 
+Test bed for integrating the monaco, and language server for fabric composer; based from See https://github.com/fabric-composer/fabric-composer/issues/207 
 
 # Plan 
 
@@ -11,28 +9,30 @@ See https://github.com/fabric-composer/fabric-composer/issues/207
 - [ ] Get the FabricComposer modelling language VSCode server (from MGK and in vscode repo)
 - [ ] Can that be integrated
 
-
- - Language Server Protocol https://github.com/Microsoft/language-server-protocol
+Language Server Protocol https://github.com/Microsoft/language-server-protocol
 
 MS don't use the language server protocol for the Monoco examples - instead pull the actual core 'smarts' out of the module and 
-put them into the Monaco plugin
+put them into the Monaco plugin. 
 
-----
+API reference for the monaco editor languages: https://microsoft.github.io/monaco-editor/api/modules/monaco.languages.html
+As an example of how MS produce a new language for Monaco: https://github.com/Microsoft/monaco-json
 
-API reference.
-https://microsoft.github.io/monaco-editor/api/modules/monaco.languages.html
-
-https://github.com/Microsoft/monaco-json
- 
-----
-The go sample is not sufficiently mature or well documented to know how this is supposed to work
-Sounds like exactly what we would like to do. 
-
-https://typefox.io/how-to-embed-a-monaco-editor-in-a-browser-as-a-part-of-my-first-task-at-typefox
-http://52.29.251.2/calcmonaco/
+A VSCode plugin is split into the two parts, client and server. The client section does the colour syntax highlighting and the server part does the parsing of the code.
 
 Adding a new language
 https://github.com/Microsoft/monaco-languages
 
 Notes on how the editor is structured
 https://github.com/Microsoft/monaco-editor/issues/190
+
+----
+The go sample is not sufficiently mature or well documented to know how this is supposed to work - it is a derative of the MS CSS plugin and is not easy to follow. 
+
+An alterantive project was documented: but the code to this is promised as being an open source project but has not yet been released.
+https://typefox.io/how-to-embed-a-monaco-editor-in-a-browser-as-a-part-of-my-first-task-at-typefox  http://52.29.251.2/calcmonaco/
+----
+
+Take the CSS or JSON MS sample and produce a Composer variant of that - it will need to have it's own parsing logic for the syntax highlighting. The smarts of the VSCode plugin are currently really around the area of validation of the parsing is correct. 
+
+Grammar parsing will be the tricky one as this takes place 'client' side and not server side.
+
