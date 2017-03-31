@@ -20,13 +20,20 @@
 
 
 
-    <link href="/assets/css/normalize.css" rel="stylesheet">
+	<style>
+				.monaco-editor, .monaco-editor-background {
+					background: #d3d3d3;
+				}
+	</style>
+
+
+  <!--  <link href="/assets/css/normalize.css" rel="stylesheet">
     <link href="/assets/css/main.css" rel="stylesheet">
     <link href="/assets/css/footer.css" rel="stylesheet">
     <link href="/assets/css/prettify.css" rel="stylesheet">
     <link href="/assets/css/bootstrap.css" rel="stylesheet">
     <link href="/assets/css/composer-style.css" rel="stylesheet">
-    <link href="/assets/css/new-style.min.css" rel="stylesheet">
+    <link href="/assets/css/new-style.min.css" rel="stylesheet">-->
 
 </head>
 <body>
@@ -58,7 +65,7 @@
 
 			keywords: [
 				'asset', 'namespace', 'asbtract', 'participant', 'abstract',
-				'concept', 'enum','transaction','optional'
+				'concept', 'enum','transaction','optional' ,'extends'
 			],
 
 			typeKeywords: [
@@ -146,15 +153,54 @@
 
 		});
 
+
+
+		function createDependencyProposals() {
+    // returning a static list of proposals, not even looking at the prefix (filtering is done by the Monaco editor),
+    // here you could do a server side lookup
+    return [
+        {
+            label: 'asset',
+            kind: monaco.languages.CompletionItemKind.Function,
+            documentation: "The Lodash library exported as Node.js modules.",
+            insertText: 'asset'
+        },
+        {
+            label: 'participant',
+            kind: monaco.languages.CompletionItemKind.Function,
+            documentation: "Fast, unopinionated, minimalist web framework",
+            insertText: '"express": "*"'
+        },
+        {
+            label: 'transaction',
+            kind: monaco.languages.CompletionItemKind.Function,
+            documentation: "Recursively mkdir, like <code>mkdir -p</code>",
+            insertText: '"mkdirp": "*"'
+        }
+    ];
+}
+
+
+monaco.languages.registerCompletionItemProvider('mySpecialLanguage', {
+    provideCompletionItems: function(model, position) {
+        // find out if we are completing a property in the 'dependencies' object.
+        var textUntilPosition = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
+		var match = textUntilPosition.match(/\s*$/);        if (match) {
+            return createDependencyProposals();
+        }
+        return [];
+    }
+});
+
 		// Define a new theme that constains only rules that match this language
 		monaco.editor.defineTheme('myCoolTheme', {
-			base: 'vs-dark',
+			base: 'vs',
 			inherit: true,
 			rules: [
 				{ token: 'keyword', foreground: '808080' },
-				
+
 				{ token: 'field', foreground: '006600', fontStyle: 'bold' },
-				{ token: 'custom-notice', foreground: 'FFA500' },
+				{ token: 'comment', foreground: 'FFA500' },
 				{ token: 'relationship', foreground: '008800' , fontStyle: 'bold' }
 			]
 		});
