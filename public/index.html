@@ -22,8 +22,37 @@
 
 	<style>
 				.monaco-editor, .monaco-editor-background {
-					background: #d3d3d3;
+					background: #424747;
 				}
+        /* Cursor */
+        .monaco-editor .cursor {
+        	background: darkred !important;
+        }
+
+        /* Current line */
+        .monaco-editor .current-line {
+        	background: rgba(0, 0, 255, 0.1);
+        }
+
+        /* Line Numbers */
+        .monaco-editor .line-numbers {
+        	background-color: #EDF9FA;
+        	color: green;
+        }
+
+        /* Line Decorations */
+        .monaco-editor .lines-decorations {
+        	background-color: #EDF9FA;
+        }
+
+        /* Selection */
+        .monaco-editor .view-overlays.focused .selected-text {
+        	background: rgba(128, 0, 0, 0.2) !important;
+        }
+        .monaco-editor .view-overlays .selected-text {
+        	background: rgba(128, 0, 0, 0.1) !important;
+        }
+
 	</style>
 
 
@@ -46,27 +75,197 @@
   			<div class="trio-center">
   				<div id="container" style="width:1000px;height:800px;border:2px solid grey"></div>
   			</div>
+        <div class="trio-right">
+          <button onclick="setJavascript()">JavaScript</button>
+          <button onclick="setReadMe()">Readme</button>
+          <button onclick="setModel()">CTO</button>
+          <button onclick="setACLs()">ACLs</button>
+            <p id="demo"></p>
+        </div>
 			</div>
 		</div>
+    <button onclick="myFunction()">Click me</button>
+
+
+
 
 </body>
-
+<script>
+function myFunction() {
+    document.getElementById("demo").innerHTML = "Hello World";
+}
+</script>
 <script src="monaco0.8.3/min/vs/loader.js"></script>
 <script>
 	require.config({ paths: { 'vs': 'monaco0.8.3/min/vs' }});
 
+  var editor;
 	require(['vs/editor/editor.main'], function() {
 
-		monaco.languages.register({
-			id: 'myCustomLanguage'
+    monaco.languages.register({
+			id: 'markdownfc'
 		});
-		monaco.languages.setMonarchTokensProvider('myCustomLanguage', {
+
+    monaco.languages.setMonarchTokensProvider('markdownfc',{
+  // escape codes
+  control:  /[\\`*_\[\]{}()#+\-\.!]/,
+  noncontrol: /[^\\`*_\[\]{}()#+\-\.!]/,
+  escapes:  /\\(?:@control)/,
+
+  // escape codes for javascript/CSS strings
+  jsescapes:  /\\(?:[btnfr\\"']|[0-7][0-7]?|[0-3][0-7]{2})/,
+
+  // non matched elements
+  empty: [
+    'area', 'base', 'basefont', 'br', 'col', 'frame',
+    'hr', 'img', 'input', 'isindex', 'link', 'meta', 'param'
+  ],
+
+  tokenizer: {
+    root: [
+      // headers
+      [/^(\s*)(#+)((?:[^\\#]|@escapes)+)((?:#+)?)/, ['white','keyword.$1','keyword.$1','keyword.$1']],
+      [/^\s*(=+|\-+)\s*$/, 'keyword.header'],
+      [/^\s*((\*[ ]?)+)\s*$/, 'keyword.header'],
+
+      // code & quote
+      [/^\s*>+/, 'string.quote' ],
+      [/^(\t|[ ]{4}).*$/, 'namespace.code'], // code line
+      [/^\s*~+\s*$/, { token: 'namespace.code', bracket: '@open', next: '@codeblock' }],
+
+      // github style code blocks
+      [/^\s*````\s*(\w+)\s*$/, { token: 'namespace.code', bracket: '@open', next: '@codeblockgh', nextEmbedded: 'text/x-$1' }],
+      [/^\s*````\s*((?:\w|[\/\-])+)\s*$/, { token: 'namespace.code', bracket: '@open', next: '@codeblockgh', nextEmbedded: '$1' }],
+
+      // list
+      [/^\s*([\*\-+:]|\d\.)/, 'string.list'],
+
+      // markup within lines
+      { include: '@linecontent' },
+    ],
+
+    codeblock: [
+      [/^\s*~+\s*$/, { token: 'namespace.code', bracket: '@close', next: '@pop' }],
+      [/.*$/, 'namespace.code' ],
+    ],
+
+    // github style code blocks
+    codeblockgh: [
+      [/````\s*$/, { token: '@rematch', bracket: '@close', switchTo: '@codeblockghend', nextEmbedded: '@pop' }],
+      [/[^`]*$/, 'namespace.code' ],
+    ],
+
+    codeblockghend: [
+      [/\s*````/, { token: 'namespace.code', bracket: '@close', next: '@pop' } ],
+      [/./, '@rematch', '@pop'],
+    ],
+
+    linecontent: [
+      // [/\s(?=<(\w+)[^>]*>)/, {token: 'html', next: 'html.$1', nextEmbedded: 'text/html' } ],
+      // [/<(\w+)[^>]*>/, {token: '@rematch', next: 'html.$1', nextEmbedded: 'text/html' } ],
+
+      // escapes
+      [/&\w+;/, 'string.escape'],
+      [/@escapes/, 'escape' ],
+
+      // various markup
+      [/\b__([^\\_]|@escapes|_(?!_))+__\b/, 'strong'],
+      [/\*\*([^\\*]|@escapes|\*(?!\*))+\*\*/, 'strong'],
+      [/\b_[^_]+_\b/, 'emphasis'],
+      [/\*([^\\*]|@escapes)+\*/, 'emphasis'],
+      [/`([^\\`]|@escapes)+`/, 'namespace.code'],
+
+      // links
+      [/\{[^}]+\}/, 'string.target'],
+      [/(!?\[)((?:[^\]\\]|@escapes)+)(\]\([^\)]+\))/, ['string.link', '', 'string.link' ]],
+      [/(!?\[)((?:[^\]\\]|@escapes)+)(\])/, 'string.link'],
+
+      // or html
+      { include: 'html' },
+    ],
+
+    html: [
+      // html tags
+      [/<(\w+)\/>/, 'tag.tag-$1' ],
+      [/<(\w+)/,  {cases: { '@empty':   { token: 'tag.tag-$1', next: '@tag.$1' },
+                            '@default': { token: 'tag.tag-$1', bracket: '@open', next: '@tag.$1' } }}],
+      [/<\/(\w+)\s*>/,  { token: 'tag.tag-$1', bracket: '@close', next: '@pop' } ],
+
+      // whitespace
+      { include: '@whitespace' },
+    ],
+
+
+    // whitespace and (html style) comments
+    whitespace: [
+      [/[ ]{2}$/, 'invalid'],
+      [/[ \t\r\n]+/, 'white'],
+      [/<!--/, 'comment', '@comment']
+    ],
+
+    comment: [
+      [/[^<\-]+/, 'comment.content' ],
+      [/-->/, 'comment', '@pop' ],
+      [/<!--/, 'comment.content.invalid'],
+      [/[<\-]/, 'comment.content' ]
+    ],
+
+    // Almost full HTML tag matching, complete with embedded scripts & styles
+    tag: [
+      [/[ \t\r\n]+/, 'white' ],
+      [/(type)(\s*=\s*)(")([^"]+)(")/, [ 'attribute.name', 'delimiter', 'attribute.value',
+                                         {token: 'attribute.value', switchTo: '@tag.$S2.$4' },
+                                         'attribute.value'] ],
+      [/(type)(\s*=\s*)(')([^']+)(')/, [ 'attribute.name', 'delimiter', 'attribute.value',
+                                         {token: 'attribute.value', switchTo: '@tag.$S2.$4' },
+                                         'attribute.value'] ],
+      [/(\w+)(\s*=\s*)("[^"]*"|'[^']*')/, ['attribute.name','delimiter','attribute.value']],
+      [/\w+/, 'attribute.name' ],
+      [/\/>/, 'tag.tag-$S2', '@pop'],
+      [/>/, { cases: { '$S2==style' : { token: 'tag.tag-$S2', switchTo: '@embedded.$S2', nextEmbedded: 'text/css'},
+                       '$S2==script': { cases: { '$S3'     : { token: 'tag.tag-$S2', switchTo: '@embedded.$S2', nextEmbedded: '$S3' },
+                                                 '@default': { token: 'tag.tag-$S2', switchTo: '@embedded.$S2', nextEmbedded: 'mjavascript' } } },
+                       '@default'   : { token: 'tag.tag-$S2', switchTo: 'html' } } }],
+    ],
+
+    embedded: [
+      [/[^"'<]+/, ''],
+      [/<\/(\w+)\s*>/, { cases: { '$1==$S2' : { token: '@rematch', switchTo: '@html', nextEmbedded: '@pop' },
+                                  '@default': '' } }],
+      [/"([^"\\]|\\.)*$/, 'string.invalid' ],  // non-teminated string
+      [/'([^'\\]|\\.)*$/, 'string.invalid' ],  // non-teminated string
+      [/"/, 'string', '@string."' ],
+      [/'/, 'string', '@string.\'' ],
+      [/</, '']
+    ],
+
+    // scan embedded strings in javascript or css
+    string: [
+      [/[^\\"']+/, 'string'],
+      [/@jsescapes/, 'string.escape'],
+      [/\\./,      'string.escape.invalid'],
+      [/["']/,     { cases: { '$#==$S2' : { token: 'string', next: '@pop' },
+                              '@default': 'string' }} ]
+    ],
+
+  },
+});
+
+		monaco.languages.register({
+			id: 'composermodel'
+		});
+		monaco.languages.setMonarchTokensProvider('composermodel', {
 			default: 'invalid',
 
 			keywords: [
 				'asset', 'namespace', 'asbtract', 'participant', 'abstract',
 				'concept', 'enum','transaction','optional' ,'extends'
 			],
+
+      aclkeywords: [
+        'description', 'namespace', 'operation', 'participant', 'resource',
+        'action','condition','rule'
+      ],
 
 			typeKeywords: [
 				'boolean', 'Double', 'byte', 'int', 'short', 'char', 'void', 'long', 'float'
@@ -93,6 +292,7 @@
 					[/o[\s]+/,'field'],
 					[/[a-z_$][\w$]*/, { cases: { '@typeKeywords': 'keyword',
 																			 '@keywords': 'keyword',
+                                       '@aclkeywords': 'keyword',
 																			 '@default': 'identifier' } }],
 					[/[A-Z][\w\$]*/, 'type.identifier' ],  // to show class names nicely
 
@@ -181,7 +381,7 @@
 }
 
 
-monaco.languages.registerCompletionItemProvider('mySpecialLanguage', {
+monaco.languages.registerCompletionItemProvider('composermodel', {
     provideCompletionItems: function(model, position) {
         // find out if we are completing a property in the 'dependencies' object.
         var textUntilPosition = model.getValueInRange({startLineNumber: 1, startColumn: 1, endLineNumber: position.lineNumber, endColumn: position.column});
@@ -197,22 +397,104 @@ monaco.languages.registerCompletionItemProvider('mySpecialLanguage', {
 			base: 'vs',
 			inherit: true,
 			rules: [
-				{ token: 'keyword', foreground: '808080' },
+				{ token: 'keyword', foreground: 'FEDB96' },
+        { token: 'comment', foreground: 'B2B9B9' },
+        { token: 'invalid', foreground: 'FFFFFF'},
 
-				{ token: 'field', foreground: '006600', fontStyle: 'bold' },
-				{ token: 'comment', foreground: 'FFA500' },
-				{ token: 'relationship', foreground: '008800' , fontStyle: 'bold' }
+				{ token: 'field', foreground: 'FF9F9F', fontStyle: 'bold' },
+				{ token: 'relationship', foreground: 'FF9F9F' , fontStyle: 'bold' }
 			]
 		});
 
-		var editor = monaco.editor.create(document.getElementById('container'), {
+		 editor = monaco.editor.create(document.getElementById('container'), {
 			theme: 'myCoolTheme',
-			value: getCode(),
-			language: 'myCustomLanguage'
+			value: composermodel(),
+			language: 'composermodel'
 		});
 	});
 
-	function getCode() {
+function setJavascript() {
+  document.getElementById("demo").innerHTML = "Javascript";
+  editor.updateOptions({
+     theme: 'vs-dark',
+     language: 'javascript'
+   });
+  editor.setValue(javascript());
+}
+
+function setModel() {
+  document.getElementById("demo").innerHTML = "CTO";
+  editor.updateOptions({
+     theme: 'myCoolTheme',
+     language: 'composermodel'
+   });
+  editor.setValue(composermodel());
+}
+
+function setReadMe() {
+  document.getElementById("demo").innerHTML = "Markdown";
+  editor.updateOptions({
+     theme: 'vs',
+     language: ''
+   });
+  editor.setValue(readme());
+}
+function setACLs() {
+  document.getElementById("demo").innerHTML = "acls";
+  editor.updateOptions({
+     theme: 'myCoolTheme',
+     language: 'composermodel'
+   });
+  editor.setValue(acls());
+}
+
+function readme(){
+  return [
+    '## Connect to Composer',
+'You can connect to Composer [here](http://composer-playground.mybluemix.net). If you have used Composer before you may need to clear your cached browser data.',
+'> Playground currently only supports the web profile.'
+].join('\n');
+}
+
+function acls(){
+  return [
+    'rule Auctioneer {',
+    '    description: "Allow the auctioneer full access"',
+    '    participant: "org.acme.vehicle.auction.Auctioneer"',
+    '    operation: ALL',
+    '    resource: "org.acme.vehicle.auction"',
+    '    action: ALLOW',
+    '}'
+  ].join('\n');
+}
+
+  function javascript(){
+    return [
+
+      '/**',
+      ' * Publish a new bond',
+      ' * @param {org.acme.bond.PublishBond} publishBond - the publishBond transaction',
+      ' * @transaction',
+      ' */',
+      'function publish(publishBond) {',
+      '',
+      '    return getAssetRegistry(\'org.acme.bond.BondAsset\')',
+      '        .then(function (registry) {',
+      '            var factory = getFactory();',
+      '            // Create the bond asset.',
+      '            var bondAsset = factory.newResource(\'org.acme.bond\', \'BondAsset\', publishBond.ISINCode);',
+      '            bondAsset.bond = publishBond.bond;',
+      '            // Add the bond asset to the registry.',
+      '            return registry.add(bondAsset);',
+      '        });',
+      '}'
+
+
+
+    ].join('\n');
+  }
+
+	function composermodel() {
 		return [
 			'/**',
 			' * Definition of a Bond, based on the FpML schema:',
